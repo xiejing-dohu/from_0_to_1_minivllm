@@ -11,6 +11,7 @@
 - Hugging Face Transformers 的基本使用方法；
 - Decoder-only Transformer 与 LLM 的基本架构；
 - Python 基础语法；
+- 基础的矩阵计算；
 - GPU 的基本架构与并行计算概念。
 
 ## 1. 查看 Qwen3-0.6B 模型架构
@@ -201,31 +202,67 @@ python day1/activation_functions.py
 
 从图中可以观察到：Sigmoid 和 Tanh 在两端趋于饱和；ReLU 直接截断负输入；Leaky ReLU 为负输入保留小斜率；GELU 和 SiLU 则以平滑方式调节输入。
 
-## 7. 实现 SiLU
 
-使用 PyTorch 可以直接实现 SiLU：
+## 7.实现SiLU代码
 
-```python
+使用torch.nn.functional可以直接调用
+```code
+import torch.nn.functional
+
+def silu(x:tensor, y:tensor)：
+    return F.silu(x, y)
+```
+
+torch.compile可以先简单理解为把代码编译成gpu友好的格式，torch.compile可以优化计算图。
+```code
+import torch.nn.functional
+
+@torch.compile
+def silu(x:tensor, y:tensor)：
+    return F.silu(x, y)
+```
+
+## 8.实现activation（SilunadMul）
+
+这部分我们来实现真正的activation层，我们把代码放到./layer文件夹路径下,首先来介绍一下activation的逻辑，如下图，左边是我们定义的逻辑，右边是实际实现的算法。
+![SiluAndMul 逻辑](figures/SiluAndMul.png)
+如果按照左边的逻辑来代码如下
+```code
 import torch
 import torch.nn.functional as F
 
 
-def silu(x: torch.Tensor) -> torch.Tensor:
-    return F.silu(x)
+@torch.compile
+def silu_and_mul(x: torch.Tensor, y: torch.Tensor) -> torch.Tensor:
+    return F.silu(x) * y
 ```
-
-如果输入张量位于 GPU，SiLU 会自动在 GPU 上执行：
-
-```python
-x = torch.randn(4096, 4096, device="cuda")
-y = silu(x)
+右边的逻辑如下图，看上去下面的代码更多，但流程上更简洁
+```code
+@torch.compile
+def silu_and_mul(x: torch.Tensor) -> torch.Tensor:
+    x, y = x.chunk(2, dim=-1)
+    return F.silu(x) * y
 ```
+## 9.基准测试
 
-也可以使用 `torch.compile` 优化函数：
+测试配置：
+- GPU：NVIDIA GeForce RTX 5060 Laptop GPU 8 GB
+- Python：3.10.19
+- PyTorch：2.10.0+cu128
+- 实际 CUDA Runtime：12.8
+- 数据类型：float32
+- 每组预热：10 次
+- 每组计时：100 次平均
+- 计时方式：CUDA Event
+- eager 与 compiled 输出一致
 
-```python
-compiled_silu = torch.compile(silu)
-y = compiled_silu(x)
-```
-
-`torch.compile` 负责优化计算图，但不会自动将 CPU 张量移动到 GPU。
+| 输入 shape | 输出 shape | 未 compile | 使用 compile | 加速比 |
+|---|---:|---:|---:|---:|
+| `(200, 400)` | `(200, 200)` | 0.0148 ms | 0.0259 ms | 0.57× |
+| `(2000, 4000)` | `(2000, 2000)` | 0.2563 ms | 0.1780 ms | 1.44× |
+| `(2, 2000, 4000)` | `(2, 2000, 2000)` | 0.5377 ms | 0.3570 ms | 1.51× |
+结论：
+- 小张量 (200, 400) 使用 torch.compile 反而慢约 74.8%，因为算子规模太小，额外调度开销超过融合收益。
+- (2000, 4000) 使用 compile 后耗时降低约 30.5%。
+- (2, 2000, 4000) 使用 compile 后耗时降低约 33.6%。
+- 张量越大，融合 SiLU + Mul 带来的显存读写优化越明显。
