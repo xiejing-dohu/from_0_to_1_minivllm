@@ -119,7 +119,7 @@ $$
 ### 3.3 ReLU
 
 $$
-\operatorname{ReLU}(x)=\max(0,x).
+\mathrm{ReLU}(x)=\max(0,x).
 $$
 
 - 计算简单，正半轴上的梯度恒为 1，有助于缓解梯度消失。
@@ -129,7 +129,7 @@ $$
 ### 3.4 Leaky ReLU
 
 $$
-\operatorname{LeakyReLU}(x)=
+\mathrm{LeakyReLU}(x)=
 \begin{cases}
 x, & x\geq 0,\\
 \alpha x, & x<0.
@@ -142,13 +142,13 @@ $$
 ### 3.5 GELU
 
 $$
-\operatorname{GELU}(x)=x\Phi(x),
+\mathrm{GELU}(x)=x\Phi(x),
 $$
 
 其中 $\Phi(x)$ 是标准正态分布的累积分布函数。绘图脚本采用常用的 tanh 近似：
 
 $$
-\operatorname{GELU}(x)\approx
+\mathrm{GELU}(x)\approx
 \frac{x}{2}\left[1+\tanh\left(\sqrt{\frac{2}{\pi}}
 \left(x+0.044715x^3\right)\right)\right].
 $$
@@ -159,7 +159,7 @@ $$
 ### 3.6 SiLU（Swish）
 
 $$
-\operatorname{SiLU}(x)=x\sigma(x).
+\mathrm{SiLU}(x)=x\sigma(x).
 $$
 
 - 函数平滑且在负半轴附近具有轻微的非单调性。
