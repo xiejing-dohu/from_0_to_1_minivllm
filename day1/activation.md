@@ -200,3 +200,32 @@ python day1/activation_functions.py
 ![常见激活函数对比](figures/activation_functions.png)
 
 从图中可以观察到：Sigmoid 和 Tanh 在两端趋于饱和；ReLU 直接截断负输入；Leaky ReLU 为负输入保留小斜率；GELU 和 SiLU 则以平滑方式调节输入。
+
+## 7. 实现 SiLU
+
+使用 PyTorch 可以直接实现 SiLU：
+
+```python
+import torch
+import torch.nn.functional as F
+
+
+def silu(x: torch.Tensor) -> torch.Tensor:
+    return F.silu(x)
+```
+
+如果输入张量位于 GPU，SiLU 会自动在 GPU 上执行：
+
+```python
+x = torch.randn(4096, 4096, device="cuda")
+y = silu(x)
+```
+
+也可以使用 `torch.compile` 优化函数：
+
+```python
+compiled_silu = torch.compile(silu)
+y = compiled_silu(x)
+```
+
+`torch.compile` 负责优化计算图，但不会自动将 CPU 张量移动到 GPU。
