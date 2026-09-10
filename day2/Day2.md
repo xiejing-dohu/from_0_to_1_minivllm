@@ -214,3 +214,32 @@ flowchart TB
 ![第一次传入 residual](figures/residual1.png)
 
 ![后续传递 residual](figures/residual2.png)
+
+## 3. RMSNorm 基准测试
+
+使用 `src/myvllm/layers/layernorm.py` 进行测试，配置如下：
+
+- GPU：NVIDIA GeForce RTX 5060 Laptop GPU 8 GB
+- Python：3.10.19
+- PyTorch：2.10.0+cu128
+- 实际 CUDA Runtime：12.8
+- 数据类型：`float32`
+- 每组预热：10 次
+- 每组计时：100 次平均
+- 计时方式：CUDA Event
+- eager 与 compiled 输出一致
+
+| 输入 shape | residual | 未 compile | 使用 compile | 加速比 |
+| --- | :---: | ---: | ---: | ---: |
+| `(200, 400)` | 无 | 0.0475 ms | 0.0530 ms | 0.90× |
+| `(200, 400)` | 有 | 0.0831 ms | 0.0600 ms | 1.38× |
+| `(2000, 4000)` | 无 | 0.6193 ms | 0.2427 ms | 2.55× |
+| `(2000, 4000)` | 有 | 0.9872 ms | 0.4980 ms | 1.98× |
+| `(2, 2000, 4000)` | 无 | 1.3571 ms | 0.3775 ms | 3.59× |
+| `(2, 2000, 4000)` | 有 | 1.8803 ms | 0.9930 ms | 1.89× |
+
+结论：
+
+- 对于不带 residual 的小张量 `(200, 400)`，`torch.compile` 略慢，因为额外调度开销超过了算子融合的收益。
+- 随着张量增大，`torch.compile` 的优势更加明显；最大一组不带 residual 时约为 3.59 倍加速。
+- 带 residual 的路径需要额外执行一次逐元素加法，因此通常比不带 residual 的路径耗时更长。
