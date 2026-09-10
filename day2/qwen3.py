@@ -73,7 +73,7 @@ class Qwen3Attention(nn.Module):
         )
 
     def forward(
-        self, 
+        self,
         x: torch.Tensor,
         positions: torch.Tensor,
     ) -> torch.Tensor:
@@ -343,7 +343,7 @@ class Qwen3ForCausalLM(nn.Module):
 
     def forward(self, input_ids: torch.Tensor) -> torch.Tensor:
         x = self.model(input_ids)
-        return x 
+        return x
 
     def compute_logits(self, hidden_states: torch.Tensor) -> torch.Tensor:
         logits = self.lm_head(hidden_states)
