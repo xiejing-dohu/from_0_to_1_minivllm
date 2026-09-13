@@ -1,0 +1,53 @@
+<mxfile host="app.diagrams.net" modified="2026-09-13T00:00:00.000Z" agent="Codex" version="24.7.17">
+  <diagram id="minivllm-overview" name="Mini vLLM 端到端流程">
+    <mxGraphModel dx="1200" dy="700" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="1169" pageHeight="827" math="0" shadow="0">
+      <root>
+        <mxCell id="0" />
+        <mxCell id="1" parent="0" />
+        <mxCell id="title" value="Mini vLLM 端到端数据流" style="text;html=1;align=center;verticalAlign=middle;fontSize=24;fontStyle=1;fontColor=#172B4D;" vertex="1" parent="1">
+          <mxGeometry x="335" y="30" width="500" height="40" as="geometry" />
+        </mxCell>
+        <mxCell id="prompt" value="Prompt" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#E3F2FD;strokeColor=#1976D2;fontSize=15;fontStyle=1;" vertex="1" parent="1">
+          <mxGeometry x="40" y="120" width="130" height="60" as="geometry" />
+        </mxCell>
+        <mxCell id="tokenizer" value="Tokenizer&#xa;encode / decode" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#E8F5E9;strokeColor=#388E3C;fontSize=15;fontStyle=1;" vertex="1" parent="1">
+          <mxGeometry x="220" y="120" width="150" height="60" as="geometry" />
+        </mxCell>
+        <mxCell id="sequence" value="Sequence&#xa;请求与 token 状态" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FFF8E1;strokeColor=#F9A825;fontSize=15;fontStyle=1;" vertex="1" parent="1">
+          <mxGeometry x="420" y="120" width="170" height="60" as="geometry" />
+        </mxCell>
+        <mxCell id="scheduler" value="Scheduler&#xa;Prefill / Decode 调度" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FFF3E0;strokeColor=#EF6C00;fontSize=15;fontStyle=1;" vertex="1" parent="1">
+          <mxGeometry x="640" y="120" width="180" height="60" as="geometry" />
+        </mxCell>
+        <mxCell id="runner" value="ModelRunner&#xa;准备张量与执行模型" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#F3E5F5;strokeColor=#8E24AA;fontSize=15;fontStyle=1;" vertex="1" parent="1">
+          <mxGeometry x="870" y="120" width="190" height="60" as="geometry" />
+        </mxCell>
+        <mxCell id="model" value="Qwen3 Model&#xa;Layers → logits" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#EDE7F6;strokeColor=#5E35B1;fontSize=15;fontStyle=1;" vertex="1" parent="1">
+          <mxGeometry x="860" y="290" width="180" height="70" as="geometry" />
+        </mxCell>
+        <mxCell id="cache" value="Paged KV Cache&#xa;Block table + K/V blocks" style="shape=cylinder3;whiteSpace=wrap;html=1;boundedLbl=1;backgroundOutline=1;fillColor=#E0F7FA;strokeColor=#00838F;fontSize=15;fontStyle=1;" vertex="1" parent="1">
+          <mxGeometry x="610" y="280" width="180" height="90" as="geometry" />
+        </mxCell>
+        <mxCell id="sampler" value="Sampler&#xa;next token" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FCE4EC;strokeColor=#D81B60;fontSize=15;fontStyle=1;" vertex="1" parent="1">
+          <mxGeometry x="380" y="290" width="150" height="70" as="geometry" />
+        </mxCell>
+        <mxCell id="output" value="Text Output" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#E3F2FD;strokeColor=#1976D2;fontSize=15;fontStyle=1;" vertex="1" parent="1">
+          <mxGeometry x="100" y="295" width="150" height="60" as="geometry" />
+        </mxCell>
+        <mxCell id="note" value="引擎层：请求、调度、显存和生命周期&#xa;模型层：给定本轮输入，计算 hidden states / logits" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#F7F9FC;strokeColor=#B3BAC5;fontColor=#42526E;fontSize=14;align=left;spacingLeft=12;" vertex="1" parent="1">
+          <mxGeometry x="310" y="430" width="550" height="75" as="geometry" />
+        </mxCell>
+        <mxCell id="e1" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;endArrow=block;endFill=1;strokeWidth=2;strokeColor=#5E6C84;" edge="1" parent="1" source="prompt" target="tokenizer"><mxGeometry relative="1" as="geometry" /></mxCell>
+        <mxCell id="e2" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;endArrow=block;endFill=1;strokeWidth=2;strokeColor=#5E6C84;" edge="1" parent="1" source="tokenizer" target="sequence"><mxGeometry relative="1" as="geometry" /></mxCell>
+        <mxCell id="e3" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;endArrow=block;endFill=1;strokeWidth=2;strokeColor=#5E6C84;" edge="1" parent="1" source="sequence" target="scheduler"><mxGeometry relative="1" as="geometry" /></mxCell>
+        <mxCell id="e4" value="batch" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;endArrow=block;endFill=1;strokeWidth=2;strokeColor=#5E6C84;fontSize=13;" edge="1" parent="1" source="scheduler" target="runner"><mxGeometry relative="1" as="geometry" /></mxCell>
+        <mxCell id="e5" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;endArrow=block;endFill=1;strokeWidth=2;strokeColor=#8E24AA;" edge="1" parent="1" source="runner" target="model"><mxGeometry relative="1" as="geometry" /></mxCell>
+        <mxCell id="e6" value="read / write" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;startArrow=block;startFill=1;endArrow=block;endFill=1;strokeWidth=2;strokeColor=#00838F;fontSize=13;" edge="1" parent="1" source="cache" target="model"><mxGeometry relative="1" as="geometry" /></mxCell>
+        <mxCell id="e7" value="logits" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;endArrow=block;endFill=1;strokeWidth=2;strokeColor=#D81B60;fontSize=13;" edge="1" parent="1" source="model" target="sampler"><mxGeometry relative="1" as="geometry" /></mxCell>
+        <mxCell id="e8" value="next token" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;endArrow=block;endFill=1;strokeWidth=2;strokeColor=#D81B60;fontSize=13;" edge="1" parent="1" source="sampler" target="scheduler"><mxGeometry relative="1" as="geometry" /></mxCell>
+        <mxCell id="e9" value="finished token ids" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;endArrow=block;endFill=1;strokeWidth=2;strokeColor=#1976D2;fontSize=13;" edge="1" parent="1" source="scheduler" target="tokenizer"><mxGeometry relative="1" as="geometry"><Array as="points"><mxPoint x="730" y="400" /><mxPoint x="295" y="400" /></Array></mxGeometry></mxCell>
+        <mxCell id="e10" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;endArrow=block;endFill=1;strokeWidth=2;strokeColor=#1976D2;" edge="1" parent="1" source="tokenizer" target="output"><mxGeometry relative="1" as="geometry" /></mxCell>
+      </root>
+    </mxGraphModel>
+  </diagram>
+</mxfile>

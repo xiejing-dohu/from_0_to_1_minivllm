@@ -203,26 +203,32 @@ python day1/activation_functions.py
 从图中可以观察到：Sigmoid 和 Tanh 在两端趋于饱和；ReLU 直接截断负输入；Leaky ReLU 为负输入保留小斜率；GELU 和 SiLU 则以平滑方式调节输入。
 
 
-## 7.实现SiLU代码
+## 7. 实现 SiLU 代码
 
-使用torch.nn.functional可以直接调用
-```code
-import torch.nn.functional
+使用 `torch.nn.functional.silu` 可以直接计算 SiLU：
 
-def silu(x:tensor, y:tensor)：
-    return F.silu(x, y)
+```python
+import torch
+import torch.nn.functional as F
+
+
+def silu(x: torch.Tensor) -> torch.Tensor:
+    return F.silu(x)
 ```
 
-torch.compile可以先简单理解为把代码编译成gpu友好的格式，torch.compile可以优化计算图。
-```code
-import torch.nn.functional
+`torch.compile` 可以先简单理解为对计算图进行编译优化：
+
+```python
+import torch
+import torch.nn.functional as F
+
 
 @torch.compile
-def silu(x:tensor, y:tensor)：
-    return F.silu(x, y)
+def silu(x: torch.Tensor) -> torch.Tensor:
+    return F.silu(x)
 ```
 
-## 8.实现activation（SilunadMul）
+## 8. 实现 activation（SiluAndMul）
 
 这部分我们来实现真正的activation层，我们把代码放到./layer文件夹路径下,首先来介绍一下activation的逻辑，如下图，左边是我们定义的逻辑，右边是实际实现的算法。
 ![SiluAndMul 逻辑](figures/SiluAndMul.png)
