@@ -1,0 +1,28 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1160" height="650" viewBox="0 0 1160 650" role="img" aria-labelledby="title desc">
+  <title id="title">Column-parallel and row-parallel linear layers</title>
+  <desc id="desc">Column parallelism shards the output dimension and concatenates local results. Row parallelism shards the input dimension and sums local partial results before adding bias once.</desc>
+  <defs><marker id="a" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto"><path d="M0 0L10 5L0 10Z" fill="#5e6c84"/></marker><style>.h{font:700 25px Arial,sans-serif;fill:#172b4d;text-anchor:middle}.section{font:700 19px Arial,sans-serif;fill:#172b4d}.t{font:700 15px Arial,sans-serif;fill:#172b4d;text-anchor:middle}.s{font:13px Arial,sans-serif;fill:#42526e;text-anchor:middle}.b{rx:10;ry:10;stroke-width:2}.e{fill:none;stroke:#5e6c84;stroke-width:2.2;marker-end:url(#a)}.dash{fill:none;stroke:#7a869a;stroke-width:1.5;stroke-dasharray:6 5}</style></defs>
+  <rect width="1160" height="650" fill="#fff"/><text class="h" x="580" y="38">Tensor-Parallel Linear Layers (TP = 2)</text>
+  <text class="section" x="35" y="82">1. Column Parallel: shard output features</text>
+  <rect class="b" x="40" y="120" width="150" height="75" fill="#e3f2fd" stroke="#1976d2"/><text class="t" x="115" y="150">x replicated</text><text class="s" x="115" y="174">[B, I]</text>
+  <rect class="b" x="260" y="95" width="165" height="70" fill="#e8f5e9" stroke="#388e3c"/><text class="t" x="342" y="124">rank 0: W0</text><text class="s" x="342" y="146">[O/2, I]</text>
+  <rect class="b" x="260" y="185" width="165" height="70" fill="#fff8e1" stroke="#f9a825"/><text class="t" x="342" y="214">rank 1: W1</text><text class="s" x="342" y="236">[O/2, I]</text>
+  <rect class="b" x="500" y="95" width="155" height="70" fill="#e8f5e9" stroke="#388e3c"/><text class="t" x="577" y="124">y0 = xW0ᵀ</text><text class="s" x="577" y="146">[B, O/2]</text>
+  <rect class="b" x="500" y="185" width="155" height="70" fill="#fff8e1" stroke="#f9a825"/><text class="t" x="577" y="214">y1 = xW1ᵀ</text><text class="s" x="577" y="236">[B, O/2]</text>
+  <rect class="b" x="765" y="135" width="160" height="80" fill="#f3e5f5" stroke="#8e24aa"/><text class="t" x="845" y="166">all_gather</text><text class="s" x="845" y="189">concat(y0, y1)</text>
+  <rect class="b" x="995" y="135" width="130" height="80" fill="#fce4ec" stroke="#d81b60"/><text class="t" x="1060" y="166">full y</text><text class="s" x="1060" y="189">[B, O]</text>
+  <path class="e" d="M190 145H225V130H260"/><path class="e" d="M190 170H225V220H260"/><path class="e" d="M425 130H500"/><path class="e" d="M425 220H500"/><path class="e" d="M655 130H710V160H765"/><path class="e" d="M655 220H710V190H765"/><path class="e" d="M925 175H995"/>
+  <path class="dash" d="M235 78V275"/><text class="s" x="300" y="278">No communication is required before the next row-parallel layer.</text>
+
+  <line x1="35" y1="315" x2="1125" y2="315" stroke="#dfe1e6" stroke-width="2"/>
+  <text class="section" x="35" y="355">2. Row Parallel: shard input features</text>
+  <rect class="b" x="40" y="400" width="150" height="70" fill="#e8f5e9" stroke="#388e3c"/><text class="t" x="115" y="429">rank 0: x0</text><text class="s" x="115" y="451">[B, I/2]</text>
+  <rect class="b" x="40" y="500" width="150" height="70" fill="#fff8e1" stroke="#f9a825"/><text class="t" x="115" y="529">rank 1: x1</text><text class="s" x="115" y="551">[B, I/2]</text>
+  <rect class="b" x="260" y="400" width="165" height="70" fill="#e8f5e9" stroke="#388e3c"/><text class="t" x="342" y="429">rank 0: W0</text><text class="s" x="342" y="451">[O, I/2]</text>
+  <rect class="b" x="260" y="500" width="165" height="70" fill="#fff8e1" stroke="#f9a825"/><text class="t" x="342" y="529">rank 1: W1</text><text class="s" x="342" y="551">[O, I/2]</text>
+  <rect class="b" x="500" y="400" width="155" height="70" fill="#e8f5e9" stroke="#388e3c"/><text class="t" x="577" y="429">p0 = x0W0ᵀ</text><text class="s" x="577" y="451">[B, O]</text>
+  <rect class="b" x="500" y="500" width="155" height="70" fill="#fff8e1" stroke="#f9a825"/><text class="t" x="577" y="529">p1 = x1W1ᵀ</text><text class="s" x="577" y="551">[B, O]</text>
+  <rect class="b" x="765" y="440" width="160" height="90" fill="#f3e5f5" stroke="#8e24aa"/><text class="t" x="845" y="475">all_reduce SUM</text><text class="s" x="845" y="499">p0 + p1</text><text class="s" x="845" y="518">then add bias once</text>
+  <rect class="b" x="995" y="445" width="130" height="80" fill="#fce4ec" stroke="#d81b60"/><text class="t" x="1060" y="476">full y</text><text class="s" x="1060" y="499">[B, O]</text>
+  <path class="e" d="M190 435H260"/><path class="e" d="M190 535H260"/><path class="e" d="M425 435H500"/><path class="e" d="M425 535H500"/><path class="e" d="M655 435H710V470H765"/><path class="e" d="M655 535H710V505H765"/><path class="e" d="M925 485H995"/>
+</svg>

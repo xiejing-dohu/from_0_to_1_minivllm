@@ -1,0 +1,31 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1160" height="610" viewBox="0 0 1160 610" role="img" aria-labelledby="title desc">
+  <title id="title">Paged KV cache physical slot mapping</title>
+  <desc id="desc">Each input token uses slot mapping to select a physical block and offset before its key and value vectors are written.</desc>
+  <defs>
+    <marker id="arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto"><path d="M0 0L10 5L0 10Z" fill="#5e6c84"/></marker>
+    <style>.h{font:700 25px Arial,sans-serif;fill:#172b4d;text-anchor:middle}.t{font:700 15px Arial,sans-serif;fill:#172b4d;text-anchor:middle}.s{font:13px Arial,sans-serif;fill:#42526e;text-anchor:middle}.box{rx:11;ry:11;stroke-width:2}.edge{fill:none;stroke:#5e6c84;stroke-width:2.2;marker-end:url(#arrow)}.map{fill:none;stroke:#d81b60;stroke-width:2.2;stroke-dasharray:7 5;marker-end:url(#arrow)}</style>
+  </defs>
+  <rect width="1160" height="610" fill="#fff"/>
+  <text class="h" x="580" y="38">K/V → slot_mapping → Paged KV Cache</text>
+
+  <rect class="box" x="45" y="110" width="190" height="105" fill="#e3f2fd" stroke="#1976d2"/>
+  <text class="t" x="140" y="143">new K / V</text><text class="s" x="140" y="170">[num_tokens,</text><text class="s" x="140" y="190">num_kv_heads, head_dim]</text>
+  <rect class="box" x="45" y="330" width="190" height="120" fill="#fce4ec" stroke="#d81b60"/>
+  <text class="t" x="140" y="362">slot_mapping</text><text class="s" x="140" y="388">[9, 1, 6, -1]</text><text class="s" x="140" y="414">physical slots</text><text class="s" x="140" y="434">-1 means skip</text>
+
+  <rect class="box" x="330" y="205" width="220" height="145" fill="#f3e5f5" stroke="#8e24aa"/>
+  <text class="t" x="440" y="240">address calculation</text><text class="s" x="440" y="270">block_id = slot // 4</text><text class="s" x="440" y="295">offset = slot % 4</text><text class="s" x="440" y="325">slot 9 → block 2, offset 1</text>
+  <path class="edge" d="M235 162H290V245H330"/><path class="edge" d="M235 390H290V310H330"/>
+
+  <text class="t" x="810" y="91">cache shape = [3 blocks, 4 slots, 2 heads, 3 dims]</text>
+  <g transform="translate(650 115)">
+    <rect class="box" x="0" y="0" width="330" height="105" fill="#e8f5e9" stroke="#388e3c"/><text class="t" x="165" y="25">physical block 0</text>
+    <rect x="20" y="43" width="65" height="42" fill="#fff" stroke="#8aa39b"/><rect x="95" y="43" width="65" height="42" fill="#c8e6c9" stroke="#388e3c"/><rect x="170" y="43" width="65" height="42" fill="#fff" stroke="#8aa39b"/><rect x="245" y="43" width="65" height="42" fill="#fff" stroke="#8aa39b"/><text class="s" x="52" y="69">0</text><text class="s" x="127" y="69">1 ← t1</text><text class="s" x="202" y="69">2</text><text class="s" x="277" y="69">3</text>
+    <rect class="box" x="0" y="130" width="330" height="105" fill="#fff8e1" stroke="#f9a825"/><text class="t" x="165" y="155">physical block 1</text>
+    <rect x="20" y="173" width="65" height="42" fill="#fff" stroke="#bca66d"/><rect x="95" y="173" width="65" height="42" fill="#fff" stroke="#bca66d"/><rect x="170" y="173" width="65" height="42" fill="#ffe082" stroke="#f9a825"/><rect x="245" y="173" width="65" height="42" fill="#fff" stroke="#bca66d"/><text class="s" x="52" y="199">4</text><text class="s" x="127" y="199">5</text><text class="s" x="202" y="199">6 ← t2</text><text class="s" x="277" y="199">7</text>
+    <rect class="box" x="0" y="260" width="330" height="105" fill="#e3f2fd" stroke="#1976d2"/><text class="t" x="165" y="285">physical block 2</text>
+    <rect x="20" y="303" width="65" height="42" fill="#fff" stroke="#7aa6ca"/><rect x="95" y="303" width="65" height="42" fill="#90caf9" stroke="#1976d2"/><rect x="170" y="303" width="65" height="42" fill="#fff" stroke="#7aa6ca"/><rect x="245" y="303" width="65" height="42" fill="#fff" stroke="#7aa6ca"/><text class="s" x="52" y="329">8</text><text class="s" x="127" y="329">9 ← t0</text><text class="s" x="202" y="329">10</text><text class="s" x="277" y="329">11</text>
+  </g>
+  <path class="map" d="M550 278H600V179H745"/><path class="map" d="M550 278H620V309H820"/><path class="map" d="M550 278H600V439H745"/>
+  <text class="s" x="810" y="530">Each slot stores all KV heads; untouched white slots remain unchanged</text>
+</svg>

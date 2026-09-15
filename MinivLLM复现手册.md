@@ -10,14 +10,19 @@
 | --- | :---: | --- | --- |
 | Step 1.1 激活函数 | ✅ 已完成 | [Day1](day1/Day1.md)、`day1/layers/activation.py` | 保留正确性与性能测试 |
 | Step 1.2 RMSNorm | ✅ 已完成 | [Day2](day2/Day2.md)、`day2/layers/layernorm.py` | 与 Qwen3 Decoder 对接 |
-| Step 1.3～1.6 其余基础层 | ⬜ 待实现 | 本手册给出接口和验收项 | 线性层 → Embedding → Attention → RoPE |
-| Step 2 模型构建 | ⬜ 待实现 | Day1 已介绍 Qwen3-0.6B 结构 | 组装 Decoder 和完整模型 |
-| Step 3 序列管理 | ⬜ 待实现 | 本手册给出数据结构 | Sequence → Block → BlockManager |
-| Step 4 Model Runner | ⬜ 待实现 | 本手册给出输入张量契约 | 先 eager，再 CUDA Graph |
-| Step 5 Scheduler | ⬜ 待实现 | 本手册给出调度状态机 | Prefill/Decode 调度与抢占 |
-| Step 6 LLM Engine | ⬜ 待实现 | 本手册给出端到端流程 | tokenizer → 调度 → 推理 → 解码 |
+| Step 1.3 TP Linear | ✅ 已完成 | [Day3](day3/Day3.md)、`day3/layers/linear.py` | 保留单元测试与 collective 验证 |
+| Step 1.4 Vocab/LM Head | ✅ 已完成 | [Day4](day4/Day4.md)、`day4/layers/embedding_head.py` | 保留 collective 与 tied weight 测试 |
+| Step 1.5.2～1.5.3 KV Cache 写入 | ✅ 已完成 | [Day5](day5/Day5.md) | Attention 基础 |
+| Step 1.5.4 Prefill Attention | ✅ 已完成 | [Day6](day6/Day6.md) | Triton FlashAttention |
+| Step 1.5.5 Decode Attention | ✅ 已完成 | [Day7](day7/Day7.md) | Triton PagedAttention |
+| Step 1.6 RoPE | ✅ 已完成 | [Day8](day8/Day8.md) | RoPE → Qwen3 |
+| Step 2 模型构建 | ✅ 已完成 | [Day9](day9/Day9.md) | Qwen3-0.6B logits 已对齐 |
+| Step 3 序列管理 | ✅ 已完成 | [Day10](day10/Day10.md) | Sequence → Block → BlockManager |
+| Step 4 Model Runner | ✅ 已完成 | [Day11](day11/Day11.md) | eager、共享内存、CUDA Graph |
+| Step 5 Scheduler | ✅ 已完成 | [Day12](day12/Day12.md) | Prefill/Decode 调度与抢占 |
+| Step 6 LLM Engine | ✅ 已完成 | [Day13](day13/Day13.md) | tokenizer → 调度 → 推理 → 解码 |
 
-这里的“已完成”只表示对应的教学代码和局部测试已经完成，不代表完整推理引擎已经完成。
+这里的“已完成”只表示对应的教学代码和局部测试已经完成，不代表完整推理引擎已经完成。必须先完成 Step1 的 Layers 和 Step2 的 Qwen3 模型，再继续 Step3～Step6。
 
 ### 0.2 环境约定
 
@@ -134,6 +139,8 @@ h = h + MLP(RMSNorm(h))
 
 ### 1.3 支持张量并行的线性层
 
+矩阵切分图、checkpoint loader、五类实现和分布式验证见 [Day 3：支持张量并行的 Linear](day3/Day3.md)。
+
 目标文件：`src/myvllm/layers/linear.py`。
 
 建议按照以下顺序实现：
@@ -165,6 +172,8 @@ torchrun --standalone --nproc_per_node=2 src/myvllm/layers/linear.py
 验收：使用同一份完整权重构造 PyTorch 基线，并在随机输入上验证分片层输出 `allclose`。测试必须覆盖 bias、有/无 gather、Merged gate/up 和 GQA QKV 四种情况。
 
 ### 1.4 Vocab Embedding 与 LM Head
+
+词表 padding、rank mask、权重绑定、gather 和采样见 [Day 4：Vocab Embedding、LM Head 与 Sampler](day4/Day4.md)。
 
 目标文件：`src/myvllm/layers/embedding_head.py`。
 
@@ -218,9 +227,13 @@ $$
 
 `store_kvcache(k, v, k_cache, v_cache, slot_mapping)` 把本轮 token 的 K/V 写入指定物理位置。先写纯 PyTorch scatter 版本作为参考，再写 Triton kernel。
 
+对应实现与逐步讲解见 [Day5：KV Cache 布局与写入](day5/Day5.md)。
+
 验收：使用随机且非连续的 `slot_mapping`，检查每个目标位置以及未写位置。不要只用顺序 block id，否则会掩盖地址映射错误。
 
 #### 1.5.4 Prefill：变长 FlashAttention
+
+对应实现、online-softmax 图解和实机基准见 [Day6：Packed Prefill FlashAttention](day6/Day6.md)。
 
 多个 prompt 可以打包为一个连续 token 张量，`cu_seqlens_q`/`cu_seqlens_k` 描述各序列边界：
 
@@ -250,6 +263,8 @@ $$
 最后输出 `acc / l`。每次最大值变化时，旧的分母与累积向量都要乘同一个 $\alpha$。
 
 #### 1.5.5 Decode：读取 paged cache
+
+对应实现、随机 block table 图解和实机基准见 [Day7：Decode PagedAttention](day7/Day7.md)。
 
 Decode 时每个序列通常只有一个 query，但要读取全部历史 K/V：
 
@@ -288,6 +303,8 @@ kv_head = q_head // queries_per_kv
 
 ### 1.6 RoPE
 
+对应实现、Q/K RMSNorm 顺序和 Hugging Face 对齐见 [Day8：Q/K RMSNorm 与 RoPE](day8/Day8.md)。
+
 目标文件：`src/myvllm/layers/rotary_embedding.py`。RoPE 只应用于 Q/K，不应用于 V。将最后一维按偶数/奇数或前半/后半配对旋转，但实现和 checkpoint 约定必须一致。
 
 ```python
@@ -306,6 +323,8 @@ k = k * cos + rotate_half(k) * sin
 ---
 
 ## Step 2：模型构建
+
+完整组装、checkpoint 映射和真实 Qwen3-0.6B logits 验证见 [Day9：Qwen3 组装与权重加载](day9/Day9.md)。
 
 目标文件：`src/myvllm/models/qwen3.py`。Day1 已展示 Qwen3-0.6B 的模块结构，组装时按由小到大的顺序实现。
 
@@ -379,6 +398,8 @@ input_ids
 
 ## Step 3：序列管理
 
+完整实现、生命周期图和不变量测试见 [Day10：Sequence 与 BlockManager](day10/Day10.md)。
+
 ### 3.1 Sequence
 
 目标文件：`src/myvllm/engine/sequence.py`。`Sequence` 是单个请求的可变状态，至少包含：
@@ -424,6 +445,8 @@ free list 中无重复 block_id
 ---
 
 ## Step 4：Model Runner
+
+张量准备、KV 容量、共享内存和 CUDA Graph 的实现见 [Day11：ModelRunner 与 CUDA Graph](day11/Day11.md)。
 
 目标文件：`src/myvllm/engine/model_runner.py`。ModelRunner 是引擎状态与模型张量之间的桥梁。
 
@@ -504,6 +527,8 @@ prepare_prefill / prepare_decode
 
 ## Step 5：Scheduler
 
+调度状态机、预算、抢占与停止条件实现见 [Day12：Scheduler](day12/Day12.md)。
+
 目标文件：`src/myvllm/engine/scheduler.py`。维护 `waiting` 和 `running` 两个队列，并让 Prefill 和 Decode 共用 token、序列数与 KV blocks 三类预算。
 
 ```mermaid
@@ -537,6 +562,8 @@ stateDiagram-v2
 ---
 
 ## Step 6：LLM Engine
+
+完整 Paged Qwen3 引擎、TP 验证与真实 0.6B 报告见 [Day13：LLMEngine 端到端推理](day13/Day13.md)。
 
 目标文件：`src/myvllm/engine/llm_engine.py`。这一层只负责编排，不重新实现模型或 cache 逻辑。
 
@@ -593,17 +620,17 @@ python -m pytest -q
 | --- | --- | --- |
 | Day1 | Qwen3 架构、激活函数、SiluAndMul | 图像、单元测试、compile benchmark |
 | Day2 | RMSNorm 与 residual | 数值对齐、四种路径 benchmark |
-| Day3 | TP Linear | 1/2 GPU 与完整 Linear 对齐 |
+| Day3 | TP Linear | 单卡、虚拟分片及多卡结果与完整 Linear 对齐 |
 | Day4 | Vocab Embedding、LM Head、Sampler | 边界 token、tied weight、logits/采样测试 |
-| Day5 | RoPE、Q/K RMSNorm | 与 Hugging Face 对齐 |
-| Day6 | KV Cache 布局和写入 | 随机 slot_mapping 测试 |
-| Day7 | Prefill FlashAttention | 变长、causal、非整块测试 |
-| Day8 | Decode PagedAttention | 随机 block table、GQA 测试 |
+| Day5 | KV Cache 布局和写入 | 随机 slot_mapping 与未写位置测试 |
+| Day6 | Prefill FlashAttention | 变长、causal、非整块测试 |
+| Day7 | Decode PagedAttention | 随机 block table、GQA 测试 |
+| Day8 | RoPE、Q/K RMSNorm | 与 Hugging Face 对齐 |
 | Day9 | Qwen3 模型组装与权重加载 | 层级输出和 logits 对齐 |
 | Day10 | Sequence、Block、BlockManager | 状态和资源不变量测试 |
-| Day11 | ModelRunner 数据准备 | Prefill/Decode 张量契约测试 |
+| Day11 | ModelRunner 数据准备、eager、CUDA Graph | Prefill/Decode 张量契约与 Graph 测试 |
 | Day12 | Scheduler | 容量、抢占、停止条件测试 |
-| Day13 | LLMEngine、TP、CUDA Graph | 端到端正确性与性能报告 |
+| Day13 | LLMEngine | TP、端到端正确性与性能报告 |
 
 ## 统一测试与 benchmark 规范
 
@@ -690,5 +717,16 @@ latency_ms = start.elapsed_time(end) / repeats
 
 - 本仓库：[Day 1：Qwen3 架构与激活函数](day1/Day1.md)
 - 本仓库：[Day 2：RMSNorm 与 residual](day2/Day2.md)
+- 本仓库：[Day 3：支持张量并行的 Linear](day3/Day3.md)
+- 本仓库：[Day 4：Vocab Embedding、LM Head 与 Sampler](day4/Day4.md)
+- 本仓库：[Day 5：KV Cache 布局与写入](day5/Day5.md)
+- 本仓库：[Day 6：Packed Prefill FlashAttention](day6/Day6.md)
+- 本仓库：[Day 7：Decode PagedAttention](day7/Day7.md)
+- 本仓库：[Day 8：Q/K RMSNorm 与 RoPE](day8/Day8.md)
+- 本仓库：[Day 9：Qwen3 组装与权重加载](day9/Day9.md)
+- 本仓库：[Day 10：Sequence 与 BlockManager](day10/Day10.md)
+- 本仓库：[Day 11：ModelRunner 与 CUDA Graph](day11/Day11.md)
+- 本仓库：[Day 12：Scheduler](day12/Day12.md)
+- 本仓库：[Day 13：LLMEngine 端到端推理](day13/Day13.md)
 - 复现主纲：`MinivLLM/HowToApproachvLLM_zh.md`
 - 目标模型：`Qwen/Qwen3-0.6B`
